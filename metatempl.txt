@@ -1,0 +1,60 @@
+<?php
+/**
+ * create a custom post type for $CLASSLABEL$s
+ **
+ * hook it up to init so that it gets called good and early
+ *
+ * see https://codex.wordpress.org/Function_Reference/register_post_type
+ *
+ **/
+add_action( 'init', 'create_$CLASSLABEL$_type' );
+function create_$CLASSLABEL$_type() {
+  register_post_type( '$CLASSLABEL$',
+    array(
+      'labels' => array(
+        'name' => __( '$CLASSLABEL$s' ),
+        'singular_name' => __( '$CLASSLABEL$' )
+      ),
+      'public' => true,
+      'has_archive' => true,
+      'rewrite' => array('slug' => '$CLASSLABEL$'),
+      'supports' => array('title', 'thumbnail', 'revisions' )
+    )
+  );
+}
+
+add_filter( 'rwmb_meta_boxes', 'semwp_register_$CLASSLABEL$_meta_boxes' );
+/**
+ * Register meta boxes
+ *
+ * @param array $meta_boxes List of meta boxes
+ *
+ * @return array
+ */
+function semwp_register_$CLASSLABEL$_meta_boxes( $meta_boxes )
+{
+	/**
+	 * prefix of meta keys (optional)
+	 * Use underscore (_) at the beginning to make keys hidden
+	 * Alt.: You also can make prefix empty to disable it
+	 */
+	// Better has an underscore as last sign
+	$prefix = 'semwp_$CLASSLABEL$_';
+    $meta_boxes[] = array(
+		// Meta box id, UNIQUE per meta box. Optional since 4.1.5
+		'id'         => '$CLASSLABEL$_info',
+		// Meta box title - Will appear at the drag and drop handle bar. Required.
+		'title'      => __( 'Main properties of a schema.org $CLASSLABEL$', 'semwp_$CLASSLABEL$_' ),
+		// Post types, accept custom post types as well - DEFAULT is 'post'. 
+        // Can be array (multiple post types) or string (1 post type). Optional.
+		'post_types' => array($SUBCLASSLABELS$),
+		// Where the meta box appear: normal (default), advanced, side. Optional.
+		'context'    => 'normal',
+		// Order of meta box: high (default), low. Optional.
+		'priority'   => 'high',
+		// Auto save: true, false (default). Optional.
+		'autosave'   => true,
+		// List of meta fields
+		'fields'     => array()
+        )
+}

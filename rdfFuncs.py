@@ -50,7 +50,7 @@ class SemWP(Graph):
         elif self.g.preferredLabel(r):
             resourcelabel = self.g.preferredLabel(r)[0][1].toPython()
         else:
-            raise Exception('resource has no label')
+            raise Exception('resource %r has no label' % r)
             return
         return resourcelabel.lower()
 
@@ -114,31 +114,53 @@ class SemWP(Graph):
                                     'desc'  => __( '{desc}' ),
                                     'clone' => true,
                             ),"""
+        objectfieldtemplate  = """
+                            array(
+                                    'type'  => 'post',
+                                    'name'  => __( '{name}' ),
+                                    'id'    => "{{$prefix}}{id}",
+                                    'desc'  => __( '{desc}' ),
+                                    'post_type'  => array({classes}),
+                                    'field_type' => 'select_advanced',
+                                    'query_args'  => array(
+                                        'post_status'    => 'publish',
+                                        'posts_per_page' => - 1,
+                                         ),
+                                    'clone' => true,
+                            ),"""
 
         for p in self.properties(c):
-
             for expected_range in self.g.objects(p, schema.rangeIncludes):
                 if (expected_range == schema.Text):
-                    fieldsarray.append(textfieldtemplate.format(name = self.resource_label(p)
-                                                                     + ' ('
-                                                                     + self.resource_label(expected_range)
-                                                                     + ')',
-                                                                id   = self.resource_label(p)
-                                                                     + self.resource_label(expected_range),
-                                                                desc = self.resource_comment(p)
-                                                                ))
+                    fieldtemplate = textfieldtemplate
+                    name = self.resource_label(p) + ' (' + self.resource_label(expected_range) + ')'
+                    id   = self.resource_label(p) + self.resource_label(expected_range)
+                    desc = self.resource_comment(p)
+                    subclasslabels = ''
                 elif (expected_range == schema.URL):
-                    fieldsarray.append(urlfieldtemplate.format(name = self.resource_label(p)
-                                                                     + ' ('
-                                                                     + self.resource_label(expected_range)
-                                                                     + ')',
-                                                                id   = self.resource_label(p)
-                                                                     + self.resource_label(expected_range),
-                                                               desc = self.resource_comment(p)
-                                                               ))
+                    fieldtemplate = urlfieldtemplate
+                    name = self.resource_label(p) + ' (' + self.resource_label(expected_range) + ')'
+                    id   = self.resource_label(p) + self.resource_label(expected_range)
+                    desc = self.resource_comment(p)
+                    subclasslabels = ''
+                elif (  expected_range == schema.ImageObject or
+                        expected_range == schema.CreativeWork):
+                    fieldtemplate = objectfieldtemplate
+                    name = self.resource_label(p) + ' (' + self.resource_label(expected_range) + ')'
+                    id   = self.resource_label(p) + self.resource_label(expected_range)
+                    desc = self.resource_comment(p)
+                    subclasses = []
+                    subclasses.extend(self.sub_classes(expected_range))
+                    classlabel = self.resource_label(expected_range)
+                    subclasslabels = "'" + classlabel + "'"
+                    for subclass in subclasses:
+                        subclasslabels = subclasslabels + ", '" + self.resource_label(subclass) + "'"
                 else:
                     print(p, 'is a', expected_range)
-                
+                fieldsarray.append(fieldtemplate.format(name = name,
+                                                        id   = id,
+                                                        desc = self.resource_comment(p),
+                                                        classes = subclasslabels))
         fieldsarray.append('\n                ),')
         return ''.join(fieldsarray)
 

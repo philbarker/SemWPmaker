@@ -1183,6 +1183,12 @@ schema:location a rdf:Property ;
         schema:Text ;
     rdfs:comment "The location of for example where the event is happening, an organization is located, or where an action takes place." .
 
+schema:ImageObject a rdfs:Class ;
+    rdfs:label "ImageObject" ;
+    rdfs:comment "An image file." ;
+    rdfs:subClassOf schema:MediaObject ;
+    owl:equivalentClass <http://purl.org/dc/dcmitype/Image> .
+
 <http://www.w3.org/wiki/WebSchemas/SchemaDotOrgSources#source_WikiDoc> a schema:Organization ;
     rdfs:label "WikiDoc" ;
     rdfs:comment "This class contains information contributed by <a href=http://wikidoc.org>WikiDoc</a>." .

@@ -37,7 +37,17 @@ class SemWP(Graph):
         else:
             raise Exception('resource %r has no label' % r)
             return
-        return resourcelabel.lower()
+        return resourcelabel
+
+    def resource_id(self, r: URIRef, lang='en'):
+    # Given SemWP object amd a resource uri and a language code string
+    # returns a string that can be used as an id for custom post types
+    # for that resource.
+    # Uses g.preferredLabel with preferred language but defaults first
+    # alternative option if possible preferred lang not available
+    # bumps to lower case and truncates to 20 chars
+        resourceid = self.resource_label(r, lang)[:20].lower()
+        return resourceid
 
     def resource_comment(self, r: URIRef):
     # Given SemWP object and a resource uri returns the rdfs comment as a string
@@ -143,34 +153,34 @@ class SemWP(Graph):
                 if (expected_range == schema.Text):
                     fieldtemplate = textfieldtemplate
                     name = self.resource_label(p) + ' (' + self.resource_label(expected_range) + ')'
-                    id   = self.resource_label(p) + self.resource_label(expected_range)
+                    id   = self.resource_id(p) + self.resource_id(expected_range)
                     desc = self.resource_comment(p)
-                    subclasslabels = ''
+                    subclassids = ''
                 elif (expected_range == schema.URL):
                     fieldtemplate = urlfieldtemplate
                     name = self.resource_label(p) + ' (' + self.resource_label(expected_range) + ')'
-                    id   = self.resource_label(p) + self.resource_label(expected_range)
+                    id   = self.resource_id(p) + self.resource_id(expected_range)
                     desc = self.resource_comment(p)
-                    subclasslabels = ''
+                    subclassids = ''
                 elif (expected_range == schema.Date):
                     fieldtemplate = datefieldtemplate
                     name = self.resource_label(p) + ' (' + self.resource_label(expected_range) + ')'
-                    id   = self.resource_label(p) + self.resource_label(expected_range)
+                    id   = self.resource_id(p) + self.resource_id(expected_range)
                     desc = self.resource_comment(p)
-                    subclasslabels = ''
+                    subclassids = ''
                 elif (expected_range == schema.DateTime):
                     fieldtemplate = datetimefieldtemplate
                     name = self.resource_label(p) + ' (' + self.resource_label(expected_range) + ')'
-                    id   = self.resource_label(p) + self.resource_label(expected_range)
+                    id   = self.resource_id(p) + self.resource_id(expected_range)
                     desc = self.resource_comment(p)
-                    subclasslabels = ''
+                    subclassids = ''
                 elif (expected_range == schema.Number or
                       expected_range == schema.Integer ):
                     fieldtemplate = numberfieldtemplate
                     name = self.resource_label(p) + ' (' + self.resource_label(expected_range) + ')'
-                    id   = self.resource_label(p) + self.resource_label(expected_range)
+                    id   = self.resource_id(p) + self.resource_id(expected_range)
                     desc = self.resource_comment(p)
-                    subclasslabels = ''
+                    subclassids = ''
                 elif (  expected_range == schema.ImageObject or
                         expected_range == schema.CreativeWork or
                         expected_range == schema.Place or
@@ -186,27 +196,27 @@ class SemWP(Graph):
                         expected_range == schema.Event ):
                     fieldtemplate = objectfieldtemplate
                     name = self.resource_label(p) + ' (' + self.resource_label(expected_range) + ')'
-                    id   = self.resource_label(p) + self.resource_label(expected_range)
+                    id   = self.resource_id(p) + self.resource_id(expected_range)
                     desc = self.resource_comment(p)
                     subclasses = []
                     subclasses.extend(self.sub_classes(expected_range))
-                    classlabel = self.resource_label(expected_range)
-                    subclasslabels = "'" + classlabel + "'"
+                    classid = self.resource_id(expected_range)
+                    subclassids = "'" + classid + "'"
                     for subclass in subclasses:
-                        subclasslabels = subclasslabels + ", '" + self.resource_label(subclass) + "'"
+                        subclassids = subclassids + ", '" + self.resource_id(subclass) + "'"
                 elif (expected_range == schema.Language or        #to do: enumerations!
                       expected_range == schema.BookFormatType ):
                     fieldtemplate = textfieldtemplate
                     name = self.resource_label(p) + ' (' + self.resource_label(expected_range) + ')'
-                    id   = self.resource_label(p) + self.resource_label(expected_range)
+                    id   = self.resource_id(p) + self.resource_id(expected_range)
                     desc = self.resource_comment(p)
-                    subclasslabels = ''
+                    subclassids = ''
                 elif (expected_range == schema.Duration):         #to do: Duration
                     fieldtemplate = textfieldtemplate
                     name = self.resource_label(p) + ' (' + self.resource_label(expected_range) + ')'
-                    id   = self.resource_label(p) + self.resource_label(expected_range)
+                    id   = self.resource_id(p) + self.resource_id(expected_range)
                     desc = self.resource_comment(p)
-                    subclasslabels = ''
+                    subclassids = ''
                 elif ( expected_range == schema.QuantitativeValue or  # these should be complex types
                        expected_range == schema.PostalAddress or      # but the class is not included
                        expected_range == schema.Class or      
@@ -214,20 +224,20 @@ class SemWP(Graph):
                        expected_range == schema.ProgramMembership):   
                     fieldtemplate = textfieldtemplate             
                     name = self.resource_label(p)
-                    id   = self.resource_label(p)
+                    id   = self.resource_id(p)
                     desc = self.resource_comment(p)
-                    subclasslabels = ''
+                    subclassids = ''
                 else:                                # ulitmately this should raise and expection
                     print(p, 'is a', expected_range) # but for now just inform what new range types
                     name = ''                        # need to be included and work around errors.
                     id = ''
                     desc = ''
-                    subclasslabels = ''
+                    subclassids = ''
                     fieldtemplate = ''
                 fieldsarray.append(fieldtemplate.format(name = name,
                                                         id   = id,
                                                         desc = self.resource_comment(p),
-                                                        classes = subclasslabels))
+                                                        classes = subclassids))
         fieldsarray.append('\n                ),')
         return ''.join(fieldsarray)
 
@@ -241,17 +251,18 @@ class SemWP(Graph):
             self.template = infile.read()
 
         classlabel = self.resource_label(c)
+        classid = self.resource_id(c)
         subclasses = []
         subclasses.extend(self.sub_classes(c))
-        subclasslabels = "'" + classlabel + "'"
+        subclassids = "'" + classid + "'"
         for subclass in subclasses:
-            subclasslabels = subclasslabels + ", '" + self.resource_label(subclass) + "'"
+            subclassids = subclassids + ", '" + self.resource_id(subclass) + "'"
         
-        self.template = self.template.replace("$CLASSLABEL$", classlabel)
-        self.template = self.template.replace("$SUBCLASSLABELS$", subclasslabels)  
+        self.template = self.template.replace("$CLASSLABEL$", classid)
+        self.template = self.template.replace("$SUBCLASSLABELS$", subclassids)  
         self.template = self.template.replace("$FIELDSARRAY$", self.fieldsarray(c))
         
-        with open(classlabel.lower()+'meta.php', 'w') as outf:
+        with open('inc/'+classlabel.lower()+'meta.php', 'w') as outf:
             outf.write(self.template)
         return
 

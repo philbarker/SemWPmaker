@@ -458,12 +458,6 @@ schema:birthDate a rdf:Property ;
     schema:rangeIncludes schema:Date ;
     rdfs:comment "Date of birth." .
 
-schema:birthPlace a rdf:Property ;
-    rdfs:label "birthPlace" ;
-    schema:domainIncludes schema:Person ;
-    schema:rangeIncludes schema:Place ;
-    rdfs:comment "The place where the person was born." .
-
 schema:bookEdition a rdf:Property ;
     rdfs:label "bookEdition" ;
     schema:domainIncludes schema:Book ;
@@ -699,12 +693,6 @@ schema:keywords a rdf:Property ;
     schema:rangeIncludes schema:Text ;
     rdfs:comment "Keywords or tags used to describe this content. Multiple entries in a keywords list are typically delimited by commas." .
 
-schema:knows a rdf:Property ;
-    rdfs:label "knows" ;
-    schema:domainIncludes schema:Person ;
-    schema:rangeIncludes schema:Person ;
-    rdfs:comment "The most generic bi-directional social/work relation." .
-
 schema:learningResourceType a rdf:Property ;
     rdfs:label "learningResourceType" ;
     schema:domainIncludes schema:CreativeWork ;
@@ -800,12 +788,6 @@ schema:rangeIncludes a rdf:Property ;
     schema:rangeIncludes schema:Class ;
     rdfs:comment "Relates a property to a class that constitutes (one of) the expected type(s) for values of the property." .
 
-schema:relatedTo a rdf:Property ;
-    rdfs:label "relatedTo" ;
-    schema:domainIncludes schema:Person ;
-    schema:rangeIncludes schema:Person ;
-    rdfs:comment "The most generic familial relation." .
-
 schema:reportNumber a rdf:Property ;
     rdfs:label "reportNumber" ;
     schema:domainIncludes schema:Report ;
@@ -843,12 +825,6 @@ schema:softwareVersion a rdf:Property ;
     schema:domainIncludes schema:SoftwareApplication ;
     schema:rangeIncludes schema:Text ;
     rdfs:comment "Version of the software instance." .
-
-schema:spouse a rdf:Property ;
-    rdfs:label "spouse" ;
-    schema:domainIncludes schema:Person ;
-    schema:rangeIncludes schema:Person ;
-    rdfs:comment "The person's spouse." .
 
 schema:startDate a rdf:Property ;
     rdfs:label "startDate" ;
@@ -982,12 +958,6 @@ schema:availableOnDevice a rdf:Property ;
     schema:rangeIncludes schema:Text ;
     rdfs:comment "Device required to run the application. Used in cases where a specific make/model is required to run the application." .
 
-schema:colleague a rdf:Property ;
-    rdfs:label "colleague" ;
-    schema:domainIncludes schema:Person ;
-    schema:rangeIncludes schema:Person ;
-    rdfs:comment "A colleague of the person." .
-
 schema:encoding a rdf:Property ;
     rdfs:label "encoding" ;
     schema:domainIncludes schema:CreativeWork ;
@@ -1029,12 +999,6 @@ schema:mainEntityOfPage a rdf:Property ;
       <br /><br />
       See <a href="/docs/datamodel.html#mainEntityBackground">background notes</a> for details.
       """ .
-
-schema:parent a rdf:Property ;
-    rdfs:label "parent" ;
-    schema:domainIncludes schema:Person ;
-    schema:rangeIncludes schema:Person ;
-    rdfs:comment "A parent of this person." .
 
 schema:performer a rdf:Property ;
     rdfs:label "performer" ;
@@ -1084,12 +1048,6 @@ schema:review a rdf:Property ;
     schema:rangeIncludes schema:Review ;
     rdfs:comment "A review of the item." .
 
-schema:sibling a rdf:Property ;
-    rdfs:label "sibling" ;
-    schema:domainIncludes schema:Person ;
-    schema:rangeIncludes schema:Person ;
-    rdfs:comment "A sibling of the person." .
-
 schema:softwareRequirements a rdf:Property ;
     rdfs:label "softwareRequirements" ;
     schema:domainIncludes schema:SoftwareApplication ;
@@ -1124,15 +1082,6 @@ schema:image a rdf:Property ;
     schema:rangeIncludes schema:ImageObject,
         schema:URL ;
     rdfs:comment "An image of the item. This can be a <a href=\"http://schema.org/URL\">URL</a> or a fully described <a href=\"http://schema.org/ImageObject\">ImageObject</a>." .
-
-schema:memberOf a rdf:Property ;
-    rdfs:label "memberOf" ;
-    schema:domainIncludes schema:Organization,
-        schema:Person ;
-    schema:inverseOf schema:member ;
-    schema:rangeIncludes schema:Organization,
-        schema:ProgramMembership ;
-    rdfs:comment "An Organization (or ProgramMembership) to which this Person or Organization belongs." .
 
 schema:parentOrganization a rdf:Property ;
     rdfs:label "parentOrganization" ;
@@ -1188,6 +1137,11 @@ schema:ImageObject a rdfs:Class ;
     rdfs:comment "An image file." ;
     rdfs:subClassOf schema:MediaObject ;
     owl:equivalentClass <http://purl.org/dc/dcmitype/Image> .
+
+schema:DataType a rdfs:Class ;
+    rdfs:label "DataType" ;
+    rdfs:comment "The basic data types such as Integers, Strings, etc." ;
+    rdfs:subClassOf rdfs:Class .
 
 <http://www.w3.org/wiki/WebSchemas/SchemaDotOrgSources#source_WikiDoc> a schema:Organization ;
     rdfs:label "WikiDoc" ;

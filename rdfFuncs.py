@@ -5,6 +5,7 @@ schema = Namespace(u'http://schema.org/')
 thing = schema.Thing
 
 from html.parser import HTMLParser
+from itertools import *
 
 class MLStripper(HTMLParser):
     def __init__(self):
@@ -23,7 +24,15 @@ class SemWP(Graph):
     
     def __init__(self, fname='lrmirdfs.ttl',
                        fmat='turtle'):
-        self.g = Graph().parse(fname, format=fmat)
+        if fname != '':
+            self.g = Graph().parse(fname, format=fmat)
+            schema = Namespace(u'http://schema.org/')
+            self.thing = schema.Thing
+        else:
+            self.g = Graph()
+            schema = Namespace(u'http://schema.org/')
+            self.thing = schema.Thing
+        self.name = None
 
     def resource_label(self, r: URIRef, lang='en'):
     # Given SemWP object amd a resource uri and a language code string
@@ -64,14 +73,34 @@ class SemWP(Graph):
         comment = comment.replace('(','')
         return comment    
 
-    def sub_classes(self, c: URIRef):
-    # Given SemWP object and a class returns a list of rdfs subclasses of the class 
-    # from the current instance of SemWP graph.
+    def peek(self, iterable):
+        try:
+            first = next(iterable)
+        except StopIteration:
+            return None
+        return first, chain([first], iterable)
+
+    def top_classes(self):
+    # give a SemWP object returns a list of rdfs classes that are
+    # not RDFS.subClass of anything
+        tclist = []
+        for c in self.g.subjects(RDF.type, RDFS.Class):
+            parent = self.peek(self.g.objects(c, RDFS.subClassOf))
+            if  parent is None:
+                tclist.append(c)
+        return tclist
+
+    def sub_classes(self, c: URIRef, recurse=True):
+    # Given SemWP object and a class returns a list of rdfs
+    # subclasses of the class from the current instance of SemWP graph.
+    # *Will descend down through subclasses of subclasses,--if this is
+    # the behaviour you want, try child_classes
         sclist = []
         if self.g.subjects(RDFS.subClassOf, c):
             for sc in self.g.subjects(RDFS.subClassOf, c):
                  sclist.append(sc)
-                 sclist.extend(self.sub_classes(sc))
+                 if recurse:
+                     sclist.extend(self.sub_classes(sc))
             return sclist
         else:
             return sclist

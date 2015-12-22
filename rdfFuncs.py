@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-from rdflib import Graph, URIRef, Namespace
+from rdflib import Graph, URIRef, Namespace, Literal
 from rdflib.namespace import RDF, RDFS
 schema = Namespace(u'http://schema.org/')
+semwp_ns = Namespace(u'http://ns.pjjk.net/semwp')
 thing = schema.Thing
 
 from html.parser import HTMLParser
@@ -28,10 +29,12 @@ class SemWP(Graph):
             self.g = Graph().parse(fname, format=fmat)
             schema = Namespace(u'http://schema.org/')
             self.thing = schema.Thing
+            semwp_ns = Namespace(u'http://ns.pjjk.net/semwp')
         else:
             self.g = Graph()
             schema = Namespace(u'http://schema.org/')
             self.thing = schema.Thing
+            semwp_ns = Namespace(u'http://ns.pjjk.net/semwp')
         self.name = None
 
     def resource_label(self, r: URIRef, lang='en'):
@@ -58,9 +61,10 @@ class SemWP(Graph):
         resourceid = self.resource_label(r, lang)[:20].lower()
         return resourceid
 
-    def resource_comment(self, r: URIRef):
+    def resource_comment(self, r: URIRef, lang='en'):
     # Given SemWP object and a resource uri returns the rdfs comment as a string
     # stripped of its HTML cruft, new lines and quotes
+    # Currently lang  is ignored (all in schema comments are in english)
         s = MLStripper()
         html = self.g.value(r, RDFS.comment, None).toPython()
         html += '<br>'      # bizarrely, will return null if no html tags at all
@@ -93,8 +97,8 @@ class SemWP(Graph):
     def sub_classes(self, c: URIRef, recurse=True):
     # Given SemWP object and a class returns a list of rdfs
     # subclasses of the class from the current instance of SemWP graph.
-    # *Will descend down through subclasses of subclasses,--if this is
-    # the behaviour you want, try child_classes
+    # Will descend down through subclasses of subclasses if recurse is
+    # set to default val of True
         sclist = []
         if self.g.subjects(RDFS.subClassOf, c):
             for sc in self.g.subjects(RDFS.subClassOf, c):
@@ -105,6 +109,98 @@ class SemWP(Graph):
         else:
             return sclist
         
+    def super_classes(self, c: URIRef, recurse=True):
+    # Given SemWP object and a class returns a list of classes of which
+    # the class is a sublass from the current instance of SemWP graph.
+    # Will ascend up through sperclasses of superclasses if recurse is
+    # set to default val of True
+        sclist = []
+        if self.g.objects(c, RDFS.subClassOf):
+            for sc in self.g.objects(c, RDFS.subClassOf):
+                 sclist.append(sc)
+                 if recurse:
+                     sclist.extend(self.super_classes(sc))
+            return sclist
+        else:
+            return sclist
+
+
+
+    def set_include_true(self, c, recurse=True):
+    # Given a class, will set the flag that determines whether a custom
+    # post type is created for that class to True.
+    # Flag can be repeated
+    # Flag not set to True or False is taken to indicate that the class will
+    # be included (ie default = True).
+    # If the flag is not T or F, then it will be created and set to True
+    # If the class is a sub class, setting of the flag will apply to all classes
+    # directly above it. This can be changed by setting recurse= False
+        count = 0
+        for o in self.g.objects(c, semwp_ns.include):
+            if o == Literal('False'):
+                self.g.remove( (c, semwp_ns.include, Literal('False')) )
+                self.g.add( (c, semwp_ns.include, Literal('True')) )
+                count = 1
+            else:         # leave entrie other than True & False well alone
+                pass
+        if count == 0: 
+            self.g.add( (c, semwp_ns.include, Literal('True')) )
+        if recurse == True:
+            for sc in self.super_classes(c, recurse=True):
+                self.set_include_true(sc, recurse=False)  #don't recurse twice
+
+    def set_include_false(self, c, recurse=True):
+    # Given a class, will set the flag that determines whether a custom
+    # post type is created for that class to True.
+    # Flag can be repeated
+    # Flag not set to True or False is taken to indicate that the class will
+    # be included (ie default = True).
+    # If the flag is not T or F, then it will be created and set to True
+    # If the class has sub classes, setting of the flag will apply to all sub
+    # classes. This can be changed by setting recurse= False
+        count = 0
+        for o in self.g.objects(c, semwp_ns.include):
+            if o == Literal('True'):
+                self.g.remove( (c, semwp_ns.include, Literal('True')) )
+                self.g.add( (c, semwp_ns.include, Literal('False')) )
+                count = 1
+            else:         # leave entries other than True & False well alone
+                pass
+        if count == 0: 
+            self.g.add( (c, semwp_ns.include, Literal('False')) )
+        if recurse == True:
+            for sc in self.g.subjects(RDFS.subClassOf, c):
+                self.set_include_false(sc, recurse=True)
+        
+    def toggle_include(self, c, recurse=True):
+    # Given a class, will reverse the flag that determines whether a custom
+    # post type is created for that class.
+    # Flag can be repeated
+    # Flag not set to True or False is taken to indicate that the class will
+    # be included.
+    # If the flag is not T or F, then it will be created and set to False
+    # If the class has sub classes, setting of the flag will apply to all sub
+    # classes.
+    # This can be changed by setting recurse= False
+        count = 0
+        for o in self.g.objects(c, semwp_ns.include):
+            if o == Literal('False'):
+                self.g.remove( (c, semwp_ns.include, Literal('False')) )
+                self.g.add( (c, semwp_ns.include, Literal('True')) )
+                count = 1
+            elif o == Literal('True'):
+                self.g.remove( (c, semwp_ns.include, Literal('True')) )
+                self.g.add( (c, semwp_ns.include, Literal('False')) )
+                count = 1
+            else:         # leave entrie other than True & False well alone
+                pass
+        if count == 0: 
+            self.g.add( (c, semwp_ns.include, Literal('False')) )
+        if recurse == True:
+            for sc in self.g.subjects(RDFS.subClassOf, c):
+                self.toggle_include(sc, recurse=True)
+
+    
     def properties(self, c: URIRef):
     # Given SemWP object and a class, return a list of those terms whos domainIncludes that class
     # and are properties

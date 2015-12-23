@@ -367,13 +367,19 @@ class SemWP(Graph):
         return ''.join(fieldsarray)
 
     def write_metafile(self, c: URIRef,
-                       template_fname='metatempl.txt'):
+                       template=''):
     # Given SemWP object and a class write a php file for creating metadata for that
     # type of thing. Uses a template to create custom post type and create meta
     # boxes for editing custom metadata for posts of that type.
+    # if the template string is not supplied a default will be read from
+    # metatempl.txt
 
-        with open(template_fname) as infile:
-            self.template = infile.read()
+        if template == '':
+            template_fname='metatempl.txt'
+            with open(template_fname) as infile:
+                self.template = infile.read()
+        else:
+            self.template = template
 
         classlabel = self.resource_label(c)
         classid = self.resource_id(c)

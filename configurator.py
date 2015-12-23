@@ -43,6 +43,17 @@ class SEMWPConfig(Frame):
         if self.templateFileName.get() is not '':
             self.write_btn.config(command=lambda:self.write(), state=NORMAL)
 
+    def open_template(self):
+        self.templateFileName.set(askopenfilename(filetypes=[("txt","*.txt")]))
+        with open(self.templateFileName.get()) as infile:
+            self.template_txt.delete('1.0', END)
+            self.template_txt.insert(END, infile.read())
+        if self.template_txt.get('1.0') == '':
+            raise Exception('%r does not seem to be a valid template'
+                             % self.templateFileName.get())
+        if self.rdfsName.get() is not None:
+            self.write_btn.config(command=lambda:self.write(), state=NORMAL)
+
     def write(self):
         self.rdfschema.write_metafile(c=self.rdfschema.thing)
 
@@ -166,6 +177,12 @@ class SEMWPConfig(Frame):
 
     def create_template_frame(self, master:Notebook):
         templateframe = Frame(master, padding = '', width=600, height=400)
+        self.template_txt.grid(row=1, column=1,
+                               in_=templateframe,
+                               sticky=(N+E+S+W))
+        self.template_txt.lift(templateframe)
+        templateframe.columnconfigure(1, weight=1)
+        templateframe.rowconfigure(1, weight=1)
         master.add(templateframe, text='Template')
 
     def create_status_bar(self, master):
@@ -190,17 +207,23 @@ class SEMWPConfig(Frame):
         # the following stringvars & widgets reference values used by
         # several functions. Declared here for clarity,
         # packed in relevant frame when frame is created
-        # configured when values for them are available.
+        # and values set when available.
         self.rdfs_btn = Button(master, text="Open\nRDFS",
                                command=lambda: self.open_rdfs())
         self.template_btn = Button(master, text="Open\nTemplate",
-                                   command='')
+                                   command=lambda: self.open_template())
         self.write_btn = Button(master, text="Write\nPHP",
                                 command='', state=DISABLED)
         self.classtree = Treeview(master)
         self.rdfsFileName = StringVar()
         self.rdfsName = StringVar()
         self.templateFileName = StringVar()
+        self.template_txt = Text(master,
+                                         background='#fff',
+                                         relief=SUNKEN, 
+                                         wrap = NONE,
+                                         width = 40,
+                                         height = 40) 
         self.className = StringVar()
         self.classDescrTxt = Text(master,
                                   background='#bbb',

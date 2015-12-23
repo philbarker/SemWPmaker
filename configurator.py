@@ -19,14 +19,16 @@ class SEMWPConfig(Frame):
             for sc in self.rdfschema.sub_classes(c, recurse=False):
                 parent = self.classtree.insert(p, 'end',
                                                text=self.rdfschema.resource_label(sc),
-                                               open=True, iid=sc)
+                                               open=True, iid=sc,
+                                               tags=('include'))
                 if (self.rdfschema.sub_classes(sc, recurse=False) != []):
                     insert_subclasses(sc, parent)
                             
         for c in self.rdfschema.top_classes():
             parent = self.classtree.insert('', 'end',
                                            text=self.rdfschema.resource_label(c),
-                                           open=True, iid=c)
+                                           open=True, iid=c,
+                                           tags=('include'))
             if (self.rdfschema.sub_classes(c, recurse=False) != []):
                 insert_subclasses(c, parent)
         
@@ -58,30 +60,50 @@ class SEMWPConfig(Frame):
                  self.includeclass.set(0)
                  count = 1
                  self.includeclassflag.set('was '+o.toPython())
-
+                 self.classtree.item(itemref, tags=('notinclude'))
+                 self.classtree.tag_configure('notinclude', foreground='gray')
             elif o == Literal('True'):
                  self.includeclass.set(1)
                  count = 1
                  self.includeclassflag.set('was '+o.toPython())
- 
+                 self.classtree.item(itemref, tags=('include'))
+                 self.classtree.tag_configure('include', foreground='black')
         if count == 0:
             self.rdfschema.set_include_true(itemref)
             self.includeclass.set(1)
             self.includeclassflag.set('count 0 set to true')
+            self.classtree.item(itemref, tags=('include'))
+            self.classtree.tag_configure('include', foreground='black')
+            
+    def set_classtree_include(self, i: URIRef, s: str):
+        if s == 'include':
+            self.classtree.item(i, tags=('include'))
+            self.classtree.tag_configure('include', foreground='black')
+            parent = self.classtree.parent(i)
+            if parent is not '':
+                self.set_classtree_include(parent, 'include')
 
-#        for o in self.rdfschema.g.objects(itemref, semwp_ns.include):
-#            self.includeclassflag.set(o.toPython())
-                 
+        elif s == 'notinclude':
+            self.classtree.item(i, tags=('notinclude'))
+            self.classtree.tag_configure('notinclude', foreground='gray')
+            for child in self.classtree.get_children(i):
+                self.set_classtree_include(child, 'notinclude')
+
         
     def include_class(self):
         item = self.classtree.focus()
         itemref = URIRef(item)
         if self.includeclass.get() == 1:
             self.rdfschema.set_include_true(itemref)
+            self.set_classtree_include(itemref, 'include')
+
         elif self.includeclass.get() == 0:
             self.rdfschema.set_include_false(itemref)
+            self.set_classtree_include(itemref, 'notinclude')
+
         for o in self.rdfschema.g.objects(itemref, semwp_ns.include):
             self.includeclassflag.set(o.toPython())
+            
 
         
     def create_buttonbar(self, master):
@@ -110,6 +132,8 @@ class SEMWPConfig(Frame):
         self.classtree.bind('<<TreeviewSelect>>', self.update_classinfo)
         self.classtree.grid(row=1, column=0, columnspan=2, in_=rdfsframe, sticky=(N+E+S+W))
         self.classtree.lift(rdfsframe)
+        self.classtree.tag_configure('include', foreground='black')
+        self.classtree.tag_configure('notinclude', foreground='gray')
         ysb.grid(row=1, column=2, sticky=(NS))
         xsb.grid(row=2, column=0, columnspan=2, sticky=(EW))
         classinfoframe = Frame(rdfsframe, width=300, height=400)
@@ -201,6 +225,9 @@ class SEMWPConfig(Frame):
 
 root = Tk()
 root.title('Semantic WordPress Configurator')
+#s = Style()
+#s.configure('Treeview', foreground='red')
+
 app = SEMWPConfig(master=root)
 app.mainloop()
     

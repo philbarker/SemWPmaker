@@ -8,6 +8,53 @@ from rdflib.namespace import RDF, RDFS
 schema = Namespace(u'http://schema.org/')
 semwp_ns = Namespace(u'http://ns.pjjk.net/semwp')
 
+class VerticalScrolledFrame(Frame):
+    """A pure Tkinter scrollable frame that actually works!
+
+    * Use the 'interior' attribute to place widgets inside the scrollable frame
+    * Construct and pack/place/grid normally
+    * This frame only allows vertical scrolling
+    * from http://tkinter.unpythonic.net/wiki/VerticalScrolledFrame
+    
+    """
+    def __init__(self, parent, *args, **kw):
+        Frame.__init__(self, parent, *args, **kw)            
+
+        # create a canvas object and a vertical scrollbar for scrolling it
+        vscrollbar = Scrollbar(self, orient=VERTICAL)
+        vscrollbar.pack(fill=Y, side=RIGHT, expand=FALSE)
+        canvas = Canvas(self, bd=0, highlightthickness=0,
+                        yscrollcommand=vscrollbar.set)
+        canvas.pack(side=LEFT, fill=BOTH, expand=TRUE)
+        vscrollbar.config(command=canvas.yview)
+
+        # reset the view
+        canvas.xview_moveto(0)
+        canvas.yview_moveto(0)
+
+        # create a frame inside the canvas which will be scrolled with it
+        self.interior = interior = Frame(canvas)
+        interior_id = canvas.create_window(0, 0, window=interior,
+                                           anchor=NW)
+
+        # track changes to the canvas and frame width and sync them,
+        # also updating the scrollbar
+        def _configure_interior(event):
+            # update the scrollbars to match the size of the inner frame
+            size = (interior.winfo_reqwidth(), interior.winfo_reqheight())
+            canvas.config(scrollregion="0 0 %s %s" % size)
+            if interior.winfo_reqwidth() != canvas.winfo_width():
+                # update the canvas's width to fit the inner frame
+                canvas.config(width=interior.winfo_reqwidth())
+        interior.bind('<Configure>', _configure_interior)
+
+        def _configure_canvas(event):
+            if interior.winfo_reqwidth() != canvas.winfo_width():
+                # update the inner frame's width to fill the canvas
+                canvas.itemconfigure(interior_id, width=canvas.winfo_width())
+        canvas.bind('<Configure>', _configure_canvas)
+
+        return
 
 class SEMWPConfig(Frame):
 
@@ -41,7 +88,7 @@ class SEMWPConfig(Frame):
             self.rdfsName.set('unnamed RDF Schema')
         self.build_classtree()
         if self.templateFileName.get() is not '':
-            self.write_btn.config(command=lambda:self.write(), state=NORMAL)
+            self.write_btn.config(command=self.write, state=NORMAL)
 
     def open_template(self):
         self.templateFileName.set(askopenfilename(filetypes=[("txt","*.txt")]))
@@ -52,10 +99,60 @@ class SEMWPConfig(Frame):
             raise Exception('%r does not seem to be a valid template'
                              % self.templateFileName.get())
         if self.rdfsName.get() is not None:
-            self.write_btn.config(command=lambda:self.write(), state=NORMAL)
+            self.write_btn.config(command=self.write, state=NORMAL)
 
     def write(self):
         self.rdfschema.write_metafile(c=self.rdfschema.thing)
+
+    def update_propertyinfo(self):
+        item = self.classtree.focus()
+        itemref = URIRef(item)
+        for child in self.propertiesframe.interior.winfo_children():
+            child.destroy()
+        showpropertyinfo = False
+        for inflag in self.rdfschema.g.objects(subject=itemref, predicate=semwp_ns.include):
+            if inflag == Literal('True'):
+                showpropertyinfo = True
+        if showpropertyinfo:
+            pcount = 0
+            self.includepropsflags.clear
+            for p in self.rdfschema.properties(itemref):
+                proplabel = self.rdfschema.resource_label(p, lang='en')
+                self.includepropsflags[proplabel] = dict()
+                heading = self.rdfschema.resource_label(p, lang='en') \
+                        + '. Range includes: '
+                rcount=1
+                self.includepropsflags[proplabel]['text'] = StringVar()
+                Checkbutton(self.propertiesframe.interior, text='text',
+                            variable=self.includepropsflags[proplabel]['text']
+                             ).grid(row=2*pcount+1, column=rcount, sticky=NW)
+
+                for c in self.rdfschema.g.objects(p, schema.rangeIncludes):
+                    heading = heading +' '+ self.rdfschema.resource_label(c, lang='en')
+                    
+                    if c == schema.Text:
+                        rcount+=1
+                        self.includepropsflags[proplabel]['long text'] = StringVar()
+                        Checkbutton(self.propertiesframe.interior, text='long text',
+                                    variable=self.includepropsflags[proplabel]['long text']
+                                    ).grid(row=2*pcount+1, column=rcount, sticky=NW)
+                    else:
+                        rcount+=1
+                        rangelabel = self.rdfschema.resource_label(c, lang='en')
+                        self.includepropsflags[proplabel][rangelabel] = StringVar()
+                        Checkbutton(self.propertiesframe.interior, text=rangelabel,
+                                    variable=self.includepropsflags[proplabel][rangelabel]
+                                    ).grid(row=2*pcount+1, column=rcount, sticky=NW)
+                        
+                Label(self.propertiesframe.interior, text=heading, padding='3 0 0 0'
+                      ).grid(row=2*pcount, column=0, columnspan=10, sticky=NW)
+                Label(self.propertiesframe.interior, text='Include as:', padding='32 0 0 9'
+                      ).grid(row=2*pcount+1, column=0, sticky=NW)
+                
+                pcount += 1
+#        self.propertiesframe.columnconfigure(1, weight=1)
+                
+                    
 
     def update_classinfo(self, event):
         item = self.classtree.focus()
@@ -65,6 +162,11 @@ class SEMWPConfig(Frame):
         self.classDescrTxt.delete('1.0', END)
         self.classDescrTxt.insert(END, self.rdfschema.resource_comment(itemref, lang='en'))
         self.classDescrTxt.configure(state = DISABLED)
+        # the following deals with setting the includeclassflag which determines whether
+        # the class if greyed out or not, setting the includeclass string variable which
+        # determines the check button state, based on the include property of the class in
+        # the graph. If the include property is not present for the class it is set to
+        # 'include' and the flag & checkbutton set accordingly.
         count = 0
         for o in self.rdfschema.g.objects(itemref, semwp_ns.include):
             if o == Literal('False'):
@@ -85,6 +187,7 @@ class SEMWPConfig(Frame):
             self.includeclassflag.set('count 0 set to true')
             self.classtree.item(itemref, tags=('include'))
             self.classtree.tag_configure('include', foreground='black')
+        self.update_propertyinfo()   
             
     def set_classtree_include(self, i: URIRef, s: str):
         if s == 'include':
@@ -114,7 +217,7 @@ class SEMWPConfig(Frame):
 
         for o in self.rdfschema.g.objects(itemref, semwp_ns.include):
             self.includeclassflag.set(o.toPython())
-            
+        self.update_propertyinfo()            
 
         
     def create_buttonbar(self, master):
@@ -164,15 +267,20 @@ class SEMWPConfig(Frame):
                                   variable=self.includeclass,
                                   command=self.include_class)
         include_chk.grid(row=3, column=1, sticky=E)
-        includeclassflag_lbl=Label(classinfoframe, textvariable= self.includeclassflag,
-                                   background='#bbb', relief=SUNKEN, padding='3 3 3 3',
-                                   font='bold', width=25)
-        includeclassflag_lbl.grid(row=4, column=1, sticky=EW)
+#        includeclassflag_lbl=Label(classinfoframe, textvariable= self.includeclassflag,
+#                                   background='#bbb', relief=SUNKEN, padding='3 3 3 3',
+#                                   font='bold', width=25)
+#        includeclassflag_lbl.grid(row=4, column=1, sticky=EW)
+        Label(classinfoframe, text='Properties:',
+              font='bold', padding='3 3 3 3').grid(row=5, column=0, sticky=NW)
+        self.propertiesframe.grid(in_ = classinfoframe, row=5, column=1, sticky=(N+E+S+W))
+        self.propertiesframe.lift(classinfoframe)
 
+        classinfoframe.rowconfigure(5, weight=1)
         classinfoframe.columnconfigure(1, weight=1)
         rdfsframe.columnconfigure(1, weight=1)
         rdfsframe.columnconfigure(3, weight=3)
-        rdfsframe.rowconfigure(1, weight=1)
+        rdfsframe.rowconfigure(1, weight=1)        
         master.add(rdfsframe, text='RDFS')
 
     def create_template_frame(self, master:Notebook):
@@ -181,6 +289,9 @@ class SEMWPConfig(Frame):
                                in_=templateframe,
                                sticky=(N+E+S+W))
         self.template_txt.lift(templateframe)
+        ysb = Scrollbar(templateframe, orient='vertical', command=self.template_txt.yview)
+        ysb.grid(row=1, column=2, sticky=NS)
+        self.template_txt.configure(yscrollcommand=ysb.set)        
         templateframe.columnconfigure(1, weight=1)
         templateframe.rowconfigure(1, weight=1)
         master.add(templateframe, text='Template')
@@ -209,9 +320,9 @@ class SEMWPConfig(Frame):
         # packed in relevant frame when frame is created
         # and values set when available.
         self.rdfs_btn = Button(master, text="Open\nRDFS",
-                               command=lambda: self.open_rdfs())
+                               command=self.open_rdfs)
         self.template_btn = Button(master, text="Open\nTemplate",
-                                   command=lambda: self.open_template())
+                                   command=self.open_template)
         self.write_btn = Button(master, text="Write\nPHP",
                                 command='', state=DISABLED)
         self.classtree = Treeview(master)
@@ -231,10 +342,16 @@ class SEMWPConfig(Frame):
                                   wrap=WORD,
                                   height=4,
                                   width=60,
-                                  state = DISABLED)        
+                                  state = DISABLED)
+        self.propertiesframe = VerticalScrolledFrame(master,
+                                     relief=SUNKEN,
+                                     padding='3 3 3 3')
+                             # the (variable) widgets in this will have info
+                             # about properties of the selected class
         self.includeclass = IntVar()
         self.includeclass.set(1)
         self.includeclassflag = StringVar()
+        self.includepropsflags=dict()
         self.create_buttonbar(master)
         self.ntbk = Notebook(master, padding='6 12 6 12')
         self.create_rdfs_frame(self.ntbk)

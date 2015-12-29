@@ -173,12 +173,12 @@ class SemWP(Graph):
                 self.set_include_false(sc, recurse=True)
         
     def toggle_include(self, c, recurse=True):
-    # Given a class, will reverse the flag that determines whether a custom
+    # Given a class, will reverse the property that determines whether a custom
     # post type is created for that class.
-    # Flag can be repeated
-    # Flag not set to True or False is taken to indicate that the class will
+    # Property can be repeated
+    # property not set to True or False is taken to indicate that the class will
     # be included.
-    # If the flag is not T or F, then it will be created and set to False
+    # If the Property is not T or F, then it will be created and set to False
     # If the class has sub classes, setting of the flag will apply to all sub
     # classes.
     # This can be changed by setting recurse= False

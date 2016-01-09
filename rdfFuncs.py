@@ -102,9 +102,9 @@ class SemWP(Graph):
         sclist = []
         if self.g.subjects(RDFS.subClassOf, c):
             for sc in self.g.subjects(RDFS.subClassOf, c):
-                 sclist.append(sc)
-                 if recurse:
-                     sclist.extend(self.sub_classes(sc))
+                sclist.append(sc)
+                if recurse:
+                    sclist.extend(self.sub_classes(sc))
             return sclist
         else:
             return sclist
@@ -117,16 +117,30 @@ class SemWP(Graph):
         sclist = []
         if self.g.objects(c, RDFS.subClassOf):
             for sc in self.g.objects(c, RDFS.subClassOf):
-                 sclist.append(sc)
-                 if recurse:
-                     sclist.extend(self.super_classes(sc))
+                sclist.append(sc)
+                if recurse:
+                    sclist.extend(self.super_classes(sc))
             return sclist
         else:
             return sclist
 
+    def set_pinclude_flags(self, p: URIRef, incl: list=None):
+    # given a property and list of strings to use as flags, 
+    # will set flags that determines what type of metabox(es) 
+    # is(are) created for that property (if any).
+        self.g.remove((p, semwp_ns.include, None))
+        for flag in incl:
+            self.g.add((p, semwp_ns.include, Literal(flag)))    
 
+    def get_pinclude_flags(self, p: URIRef):
+    # given a property will a list of strings which are flags that determines 
+    # what type of metabox(es) is(are) created for that property (if any).
+        pinclude_flags = []
+        for flag in self.g.objects(p, semwp_ns.include):
+            pinclude_flags.append(flag.toPython())
+        return pinclude_flags
 
-    def set_include_true(self, c, recurse=True):
+    def set_include_true(self, c: URIRef, recurse=True):
     # Given a class, will set the flag that determines whether a custom
     # post type is created for that class to True.
     # Flag can be repeated

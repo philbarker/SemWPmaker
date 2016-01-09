@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 from rdfFuncs import SemWP 
 from tkinter import *
-from tkinter.filedialog import *
+from tkinter.filedialog import askopenfilename
 from tkinter.ttk import *
+from tkinter import messagebox
 from rdflib import URIRef, Namespace, Literal
-from rdflib.namespace import RDF, RDFS
+from checkgroup import CheckbuttonGroup
+from _ast import Str
+
 schema = Namespace(u'http://schema.org/')
 semwp_ns = Namespace(u'http://ns.pjjk.net/semwp')
 
@@ -15,7 +18,7 @@ class VerticalScrolledFrame(Frame):
     * Construct and pack/place/grid normally
     * This frame only allows vertical scrolling
     * from http://tkinter.unpythonic.net/wiki/VerticalScrolledFrame
-    
+
     """
     def __init__(self, parent, *args, **kw):
         Frame.__init__(self, parent, *args, **kw)            
@@ -103,55 +106,59 @@ class SEMWPConfig(Frame):
 
     def write(self):
         self.rdfschema.write_metafile(c=self.rdfschema.thing)
+        
+    def set_property_flag(self, p:URIRef):
+        include = []
+        plabel = self.rdfschema.resource_label(p, lang='en')
+        for key in self.propcheckboxes[plabel].vals.keys():
+            if self.propcheckboxes[plabel].vals[key].get() == 1:
+                include.append(key)
+        self.rdfschema.set_pinclude_flags(p, include)
 
     def update_propertyinfo(self):
+        # Display list of properties for the item currently selected in the classtree iff
+        # that item is selected to have a custom post type created for it; then, 
+        # create a checkbox for each property of displayed classes which determines what
+        # type of metadata box is created for that property (if any).
         item = self.classtree.focus()
         itemref = URIRef(item)
         for child in self.propertiesframe.interior.winfo_children():
             child.destroy()
         showpropertyinfo = False
         for inflag in self.rdfschema.g.objects(subject=itemref, predicate=semwp_ns.include):
-            if inflag == Literal('True'):
-                showpropertyinfo = True
+            if inflag == Literal('True'):    # sets showpropertyinfo if post type is to be 
+                showpropertyinfo = True      # created for class
         if showpropertyinfo:
-            pcount = 0
-            self.includepropsflags.clear
+            pcount = 0             # property count, used to set grid row of checkbox
+            self.propcheckboxes = dict()
             for p in self.rdfschema.properties(itemref):
                 proplabel = self.rdfschema.resource_label(p, lang='en')
-                self.includepropsflags[proplabel] = dict()
-                heading = self.rdfschema.resource_label(p, lang='en') \
-                        + '. Range includes: '
-                rcount=1
-                self.includepropsflags[proplabel]['text'] = StringVar()
-                Checkbutton(self.propertiesframe.interior, text='text',
-                            variable=self.includepropsflags[proplabel]['text']
-                             ).grid(row=2*pcount+1, column=rcount, sticky=NW)
-
+                heading = proplabel + '. Range includes: '
+                flags=self.rdfschema.get_pinclude_flags(p)
+                names=['text']
                 for c in self.rdfschema.g.objects(p, schema.rangeIncludes):
                     heading = heading +' '+ self.rdfschema.resource_label(c, lang='en')
-                    
                     if c == schema.Text:
-                        rcount+=1
-                        self.includepropsflags[proplabel]['long text'] = StringVar()
-                        Checkbutton(self.propertiesframe.interior, text='long text',
-                                    variable=self.includepropsflags[proplabel]['long text']
-                                    ).grid(row=2*pcount+1, column=rcount, sticky=NW)
+                        names.append('long text')
+                        if flags == []:
+                            self.rdfschema.set_pinclude_flags(p, incl=['text'])
                     else:
-                        rcount+=1
                         rangelabel = self.rdfschema.resource_label(c, lang='en')
-                        self.includepropsflags[proplabel][rangelabel] = StringVar()
-                        Checkbutton(self.propertiesframe.interior, text=rangelabel,
-                                    variable=self.includepropsflags[proplabel][rangelabel]
-                                    ).grid(row=2*pcount+1, column=rcount, sticky=NW)
-                        
+                        names.append(rangelabel)
+                        if flags == []:
+                            self.rdfschema.set_pinclude_flags(p, incl=[rangelabel])
                 Label(self.propertiesframe.interior, text=heading, padding='3 0 0 0'
                       ).grid(row=2*pcount, column=0, columnspan=10, sticky=NW)
                 Label(self.propertiesframe.interior, text='Include as:', padding='32 0 0 9'
-                      ).grid(row=2*pcount+1, column=0, sticky=NW)
-                
+                      ).grid(row=2*pcount+1, column=0, sticky=NW)    
+                self.propcheckboxes[proplabel] = CheckbuttonGroup(
+                                                    self.propertiesframe.interior, names,
+                                                    command=lambda prop=p: self.set_property_flag(prop),
+                                                    side=LEFT)
+                self.propcheckboxes[proplabel].grid(row=2*pcount+1, column=1, sticky=NW)
+                for name in self.rdfschema.get_pinclude_flags(p):
+                    self.propcheckboxes[proplabel].vals[name].set(1)
                 pcount += 1
-#        self.propertiesframe.columnconfigure(1, weight=1)
-                
                     
 
     def update_classinfo(self, event):
@@ -170,17 +177,17 @@ class SEMWPConfig(Frame):
         count = 0
         for o in self.rdfschema.g.objects(itemref, semwp_ns.include):
             if o == Literal('False'):
-                 self.includeclass.set(0)
-                 count = 1
-                 self.includeclassflag.set('was '+o.toPython())
-                 self.classtree.item(itemref, tags=('notinclude'))
-                 self.classtree.tag_configure('notinclude', foreground='gray')
+                self.includeclass.set(0)
+                count = 1
+                self.includeclassflag.set('was '+o.toPython())
+                self.classtree.item(itemref, tags=('notinclude'))
+                self.classtree.tag_configure('notinclude', foreground='gray')
             elif o == Literal('True'):
-                 self.includeclass.set(1)
-                 count = 1
-                 self.includeclassflag.set('was '+o.toPython())
-                 self.classtree.item(itemref, tags=('include'))
-                 self.classtree.tag_configure('include', foreground='black')
+                self.includeclass.set(1)
+                count = 1
+                self.includeclassflag.set('was '+o.toPython())
+                self.classtree.item(itemref, tags=('include'))
+                self.classtree.tag_configure('include', foreground='black')
         if count == 0:
             self.rdfschema.set_include_true(itemref)
             self.includeclass.set(1)
@@ -267,10 +274,6 @@ class SEMWPConfig(Frame):
                                   variable=self.includeclass,
                                   command=self.include_class)
         include_chk.grid(row=3, column=1, sticky=E)
-#        includeclassflag_lbl=Label(classinfoframe, textvariable= self.includeclassflag,
-#                                   background='#bbb', relief=SUNKEN, padding='3 3 3 3',
-#                                   font='bold', width=25)
-#        includeclassflag_lbl.grid(row=4, column=1, sticky=EW)
         Label(classinfoframe, text='Properties:',
               font='bold', padding='3 3 3 3').grid(row=5, column=0, sticky=NW)
         self.propertiesframe.grid(in_ = classinfoframe, row=5, column=1, sticky=(N+E+S+W))
@@ -346,12 +349,12 @@ class SEMWPConfig(Frame):
         self.propertiesframe = VerticalScrolledFrame(master,
                                      relief=SUNKEN,
                                      padding='3 3 3 3')
-                             # the (variable) widgets in this will have info
-                             # about properties of the selected class
+                            # the (variable) widgets in this will have info
+                            # about properties of the selected class
         self.includeclass = IntVar()
         self.includeclass.set(1)
         self.includeclassflag = StringVar()
-        self.includepropsflags=dict()
+#        self.includepropsflags=dict()
         self.create_buttonbar(master)
         self.ntbk = Notebook(master, padding='6 12 6 12')
         self.create_rdfs_frame(self.ntbk)

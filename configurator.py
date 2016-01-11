@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 from rdfFuncs import SemWP 
-from tkinter import *
-from tkinter.filedialog import askopenfilename
-from tkinter.ttk import *
+from tkinter import Tk, StringVar, IntVar, Text
+from tkinter.constants import N, S, E, W, NS, NW, EW, SE, NSEW, LEFT
+from tkinter.constants import SUNKEN, NONE, WORD, END, NORMAL, DISABLED
+from tkinter.filedialog import askopenfilename, asksaveasfilename
+from tkinter.ttk import Frame, Notebook, Treeview, Label, Button, Scrollbar, Checkbutton
 from rdflib import URIRef, Namespace, Literal
 from pbtkextend import CheckbuttonGroup, VerticalScrolledFrame, TextPage, \
                         ButtonBar
@@ -61,6 +63,12 @@ class SEMWPConfig(Frame):
         self.rdfschema.write_metafile(c=self.rdfschema.thing)
         
     def save_template(self):
+        self.templateFileName.set(asksaveasfilename(filetypes=[("txt","*.txt")]))
+        with open(self.templateFileName.get(), 'w') as outfile:
+            if outfile is None:
+                return
+            else:
+                outfile.write(self.template_txt.get('1.0', END) )
         pass
         
     def set_property_flag(self, p:URIRef):
@@ -125,8 +133,8 @@ class SEMWPConfig(Frame):
         self.classDescrTxt.delete('1.0', END)
         self.classDescrTxt.insert(END, self.rdfschema.resource_comment(itemref, lang='en'))
         self.classDescrTxt.configure(state = DISABLED)
-        # the following deals with setting the includeclassflag which determines whether
-        # the class if greyed out or not, setting the includeclass string variable which
+        # the following deals with setting the includeclass flag which determines whether
+        # the class if greyed out or not, setting the includeclass int variable which
         # determines the check button state, based on the include property of the class in
         # the graph. If the include property is not present for the class it is set to
         # 'include' and the flag & checkbutton set accordingly.
@@ -135,19 +143,19 @@ class SEMWPConfig(Frame):
             if o == Literal('False'):
                 self.includeclass.set(0)
                 count = 1
-                self.includeclassflag.set('was '+o.toPython())
+#                self.includeclassflag.set('was '+o.toPython())
                 self.classtree.item(itemref, tags=('notinclude'))
                 self.classtree.tag_configure('notinclude', foreground='gray')
             elif o == Literal('True'):
                 self.includeclass.set(1)
                 count = 1
-                self.includeclassflag.set('was '+o.toPython())
+#               self.includeclassflag.set('was '+o.toPython())
                 self.classtree.item(itemref, tags=('include'))
                 self.classtree.tag_configure('include', foreground='black')
         if count == 0:
             self.rdfschema.set_include_true(itemref)
             self.includeclass.set(1)
-            self.includeclassflag.set('count 0 set to true')
+#            self.includeclassflag.set('count 0 set to true')
             self.classtree.item(itemref, tags=('include'))
             self.classtree.tag_configure('include', foreground='black')
         self.update_propertyinfo()   
@@ -159,13 +167,11 @@ class SEMWPConfig(Frame):
             parent = self.classtree.parent(i)
             if parent is not '':
                 self.set_classtree_include(parent, 'include')
-
         elif s == 'notinclude':
             self.classtree.item(i, tags=('notinclude'))
             self.classtree.tag_configure('notinclude', foreground='gray')
             for child in self.classtree.get_children(i):
                 self.set_classtree_include(child, 'notinclude')
-
         
     def include_class(self):
         item = self.classtree.focus()
@@ -173,13 +179,11 @@ class SEMWPConfig(Frame):
         if self.includeclass.get() == 1:
             self.rdfschema.set_include_true(itemref)
             self.set_classtree_include(itemref, 'include')
-
         elif self.includeclass.get() == 0:
             self.rdfschema.set_include_false(itemref)
             self.set_classtree_include(itemref, 'notinclude')
-
-        for o in self.rdfschema.g.objects(itemref, semwp_ns.include):
-            self.includeclassflag.set(o.toPython())
+#        for o in self.rdfschema.g.objects(itemref, semwp_ns.include):
+#            self.includeclassflag.set(o.toPython())
         self.update_propertyinfo()            
         
     def create_rdfs_frame(self, master:Notebook):
@@ -194,14 +198,14 @@ class SEMWPConfig(Frame):
         self.classtree.configure(yscrollcommand=ysb.set)
         self.classtree.configure(xscrollcommand=xsb.set)
         self.classtree.bind('<<TreeviewSelect>>', self.update_classinfo)
-        self.classtree.grid(row=1, column=0, columnspan=2, in_=rdfsframe, sticky=(N+E+S+W))
+        self.classtree.grid(row=1, column=0, columnspan=2, in_=rdfsframe, sticky=NSEW)
         self.classtree.lift(rdfsframe)
         self.classtree.tag_configure('include', foreground='black')
         self.classtree.tag_configure('notinclude', foreground='gray')
         ysb.grid(row=1, column=2, sticky=(NS))
         xsb.grid(row=2, column=0, columnspan=2, sticky=(EW))
         classinfoframe = Frame(rdfsframe, width=300, height=400)
-        classinfoframe.grid(row=1, column=3, padx=3, pady=3, sticky=(N+E+S+W))
+        classinfoframe.grid(row=1, column=3, padx=3, pady=3, sticky=(NSEW))
         Label(classinfoframe, text='Class Name:',
               font='bold', padding='3 3 3 3').grid(row=1, column=0, sticky=NW)
         classNameLbl = Label(classinfoframe, textvariable=self.className,
@@ -261,7 +265,8 @@ class SEMWPConfig(Frame):
         self.savetemplate_btn = Button(master, text="Save\nTemplate",
                                        command='', state=DISABLED)
         btnlst = [self.rdfs_btn, self.template_btn, self.write_btn, self.savetemplate_btn]
-        ButtonBar(master, btnlst, 3).grid(column=0,row=0, sticky=(N, W))
+        ButtonBar(master, btnlst, 3, padding='3 3 0 0'
+                  ).grid(column=0,row=0, sticky=(N, W))
         self.classtree = Treeview(master)
         self.rdfsFileName = StringVar()
         self.rdfsName = StringVar()
@@ -280,7 +285,7 @@ class SEMWPConfig(Frame):
                             # about properties of the selected class
         self.includeclass = IntVar()
         self.includeclass.set(1)
-        self.includeclassflag = StringVar()
+#        self.includeclassflag = StringVar()
 #        self.includepropsflags=dict()
         self.ntbk = Notebook(master, padding='6 12 6 12')
         self.create_rdfs_frame(self.ntbk)
@@ -296,12 +301,8 @@ class SEMWPConfig(Frame):
         self.create_status_bar(master)
         
 
-
-root = Tk()
-root.title('Semantic WordPress Configurator')
-#s = Style()
-#s.configure('Treeview', foreground='red')
-
-app = SEMWPConfig(master=root)
-app.mainloop()
+if __name__ == '__main__':
+    root = Tk()
+    root.title('Semantic WordPress Configurator')
+    SEMWPConfig(master=root).mainloop()
     

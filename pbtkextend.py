@@ -1,6 +1,6 @@
-from tkinter import Frame, Checkbutton, Scrollbar, Canvas, IntVar, Text
-from tkinter import VERTICAL,LEFT, RIGHT, BOTH, TRUE, FALSE, Y, NW, NS, NSEW
-from tkinter.ttk import Notebook
+from tkinter import Checkbutton, Scrollbar, Canvas, IntVar, Text
+from tkinter.constants import VERTICAL, LEFT, RIGHT, BOTH, TRUE, FALSE, Y, NW, NS, NSEW
+from tkinter.ttk import Frame, Notebook
 
 class ButtonBar(Frame):
     u"""A frame containing a single row of buttons. NB, the buttons

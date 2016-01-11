@@ -54,7 +54,7 @@ class SEMWPConfig(Frame):
         if self.template_txt.get('1.0') == '':
             raise Exception('%r does not seem to be a valid template'
                              % self.templateFileName.get())
-        if self.rdfsName.get() is not None:
+        if self.rdfsName.get() is not '':
             self.write_btn.config(command=self.write, state=NORMAL)
         self.savetemplate_btn.config(command=self.save_template, state=NORMAL)
 
@@ -264,7 +264,9 @@ class SEMWPConfig(Frame):
                                 command='', state=DISABLED)
         self.savetemplate_btn = Button(master, text="Save\nTemplate",
                                        command='', state=DISABLED)
-        btnlst = [self.rdfs_btn, self.template_btn, self.write_btn, self.savetemplate_btn]
+        self.saverdfs_btn = Button(master, text="Save\nRDFS",
+                                       command='', state=DISABLED)
+        btnlst = [self.rdfs_btn, self.template_btn, self.savetemplate_btn, self.saverdfs_btn, self.write_btn]
         ButtonBar(master, btnlst, 3, padding='3 3 0 0'
                   ).grid(column=0,row=0, sticky=(N, W))
         self.classtree = Treeview(master)

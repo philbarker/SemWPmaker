@@ -6,7 +6,7 @@ semwp_ns = Namespace(u'http://ns.pjjk.net/semwp')
 thing = schema.Thing
 
 from html.parser import HTMLParser
-from itertools import *
+from itertools import chain
 
 class MLStripper(HTMLParser):
     def __init__(self):

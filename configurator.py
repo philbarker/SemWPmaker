@@ -3,61 +3,11 @@ from rdfFuncs import SemWP
 from tkinter import *
 from tkinter.filedialog import askopenfilename
 from tkinter.ttk import *
-from tkinter import messagebox
 from rdflib import URIRef, Namespace, Literal
-from checkgroup import CheckbuttonGroup
-from _ast import Str
+from pbtkextend import CheckbuttonGroup, VerticalScrolledFrame, TextPage
 
 schema = Namespace(u'http://schema.org/')
 semwp_ns = Namespace(u'http://ns.pjjk.net/semwp')
-
-class VerticalScrolledFrame(Frame):
-    """A pure Tkinter scrollable frame that actually works!
-
-    * Use the 'interior' attribute to place widgets inside the scrollable frame
-    * Construct and pack/place/grid normally
-    * This frame only allows vertical scrolling
-    * from http://tkinter.unpythonic.net/wiki/VerticalScrolledFrame
-
-    """
-    def __init__(self, parent, *args, **kw):
-        Frame.__init__(self, parent, *args, **kw)            
-
-        # create a canvas object and a vertical scrollbar for scrolling it
-        vscrollbar = Scrollbar(self, orient=VERTICAL)
-        vscrollbar.pack(fill=Y, side=RIGHT, expand=FALSE)
-        canvas = Canvas(self, bd=0, highlightthickness=0,
-                        yscrollcommand=vscrollbar.set)
-        canvas.pack(side=LEFT, fill=BOTH, expand=TRUE)
-        vscrollbar.config(command=canvas.yview)
-
-        # reset the view
-        canvas.xview_moveto(0)
-        canvas.yview_moveto(0)
-
-        # create a frame inside the canvas which will be scrolled with it
-        self.interior = interior = Frame(canvas)
-        interior_id = canvas.create_window(0, 0, window=interior,
-                                           anchor=NW)
-
-        # track changes to the canvas and frame width and sync them,
-        # also updating the scrollbar
-        def _configure_interior(event):
-            # update the scrollbars to match the size of the inner frame
-            size = (interior.winfo_reqwidth(), interior.winfo_reqheight())
-            canvas.config(scrollregion="0 0 %s %s" % size)
-            if interior.winfo_reqwidth() != canvas.winfo_width():
-                # update the canvas's width to fit the inner frame
-                canvas.config(width=interior.winfo_reqwidth())
-        interior.bind('<Configure>', _configure_interior)
-
-        def _configure_canvas(event):
-            if interior.winfo_reqwidth() != canvas.winfo_width():
-                # update the inner frame's width to fill the canvas
-                canvas.itemconfigure(interior_id, width=canvas.winfo_width())
-        canvas.bind('<Configure>', _configure_canvas)
-
-        return
 
 class SEMWPConfig(Frame):
 
@@ -286,19 +236,6 @@ class SEMWPConfig(Frame):
         rdfsframe.rowconfigure(1, weight=1)        
         master.add(rdfsframe, text='RDFS')
 
-    def create_template_frame(self, master:Notebook):
-        templateframe = Frame(master, padding = '', width=600, height=400)
-        self.template_txt.grid(row=1, column=1,
-                               in_=templateframe,
-                               sticky=(N+E+S+W))
-        self.template_txt.lift(templateframe)
-        ysb = Scrollbar(templateframe, orient='vertical', command=self.template_txt.yview)
-        ysb.grid(row=1, column=2, sticky=NS)
-        self.template_txt.configure(yscrollcommand=ysb.set)        
-        templateframe.columnconfigure(1, weight=1)
-        templateframe.rowconfigure(1, weight=1)
-        master.add(templateframe, text='Template')
-
     def create_status_bar(self, master):
         statbar = Frame(master, padding = '3 3 3 3')
         statbar.grid(column=0, row=2, sticky=(EW, S))
@@ -332,12 +269,6 @@ class SEMWPConfig(Frame):
         self.rdfsFileName = StringVar()
         self.rdfsName = StringVar()
         self.templateFileName = StringVar()
-        self.template_txt = Text(master,
-                                         background='#fff',
-                                         relief=SUNKEN, 
-                                         wrap = NONE,
-                                         width = 40,
-                                         height = 40) 
         self.className = StringVar()
         self.classDescrTxt = Text(master,
                                   background='#bbb',
@@ -347,8 +278,7 @@ class SEMWPConfig(Frame):
                                   width=60,
                                   state = DISABLED)
         self.propertiesframe = VerticalScrolledFrame(master,
-                                     relief=SUNKEN,
-                                     padding='3 3 3 3')
+                                     relief=SUNKEN)
                             # the (variable) widgets in this will have info
                             # about properties of the selected class
         self.includeclass = IntVar()
@@ -358,7 +288,12 @@ class SEMWPConfig(Frame):
         self.create_buttonbar(master)
         self.ntbk = Notebook(master, padding='6 12 6 12')
         self.create_rdfs_frame(self.ntbk)
-        self.create_template_frame(self.ntbk)        
+        self.template_txt = TextPage(self.ntbk, 'Template', 
+                                    background='#fff',
+                                    relief=SUNKEN, 
+                                    wrap = NONE,
+                                    width = 40,
+                                    height = 40)
         self.ntbk.grid(column=0, row=1, sticky=NSEW)
         self.master.columnconfigure(0, weight=1)
         self.master.rowconfigure(1, weight=1)

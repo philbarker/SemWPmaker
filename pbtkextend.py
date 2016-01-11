@@ -1,5 +1,26 @@
-from tkinter import Frame, Checkbutton, Scrollbar, Canvas, IntVar
-from tkinter import VERTICAL,LEFT, RIGHT, BOTH, TRUE, FALSE, Y, NW
+from tkinter import Frame, Checkbutton, Scrollbar, Canvas, IntVar, Text
+from tkinter import VERTICAL,LEFT, RIGHT, BOTH, TRUE, FALSE, Y, NW, NS, NSEW
+from tkinter.ttk import Notebook
+
+class TextPage(Text):
+    u"""A page in a ttk Notebook which is a scrollable text widget
+    Options: master: must be a ttkNotebook.
+      text: the label to use on the noteook page tab
+      *args & **kw options for Text widget
+    Properties: f, a frame into which Scrollbar and Text are gridded
+    Extends: Text widget      
+    """
+    def __init__(self, master:Notebook, text, *args, **kw):
+        super(TextPage, self).__init__(master, *args, **kw)
+        f = Frame(master)
+        self.grid(in_=f, row=0, column=0, sticky=NSEW)
+        self.lift(f)
+        sb = Scrollbar(f, orient='vertical', command=self.yview)
+        sb.grid(row=0, column=1, sticky=NS)
+        self.configure(yscrollcommand=sb.set) 
+        f.columnconfigure(0, weight=1)
+        f.rowconfigure(0, weight=1)        
+        master.add(f, text=text) 
 
 class CheckbuttonGroup(Frame):
 

@@ -4,7 +4,8 @@ from tkinter import *
 from tkinter.filedialog import askopenfilename
 from tkinter.ttk import *
 from rdflib import URIRef, Namespace, Literal
-from pbtkextend import CheckbuttonGroup, VerticalScrolledFrame, TextPage
+from pbtkextend import CheckbuttonGroup, VerticalScrolledFrame, TextPage, \
+                        ButtonBar
 
 schema = Namespace(u'http://schema.org/')
 semwp_ns = Namespace(u'http://ns.pjjk.net/semwp')
@@ -53,9 +54,14 @@ class SEMWPConfig(Frame):
                              % self.templateFileName.get())
         if self.rdfsName.get() is not None:
             self.write_btn.config(command=self.write, state=NORMAL)
+        self.savetemplate_btn.config(command=self.save_template, state=NORMAL)
+
 
     def write(self):
         self.rdfschema.write_metafile(c=self.rdfschema.thing)
+        
+    def save_template(self):
+        pass
         
     def set_property_flag(self, p:URIRef):
         include = []
@@ -175,19 +181,6 @@ class SEMWPConfig(Frame):
         for o in self.rdfschema.g.objects(itemref, semwp_ns.include):
             self.includeclassflag.set(o.toPython())
         self.update_propertyinfo()            
-
-        
-    def create_buttonbar(self, master):
-        bbframe = Frame(master, padding='3 3 3 3')
-        self.rdfs_btn.grid(column=0, row=0, in_=bbframe)
-        self.rdfs_btn.lift(bbframe)
-        self.template_btn.grid(column=1, row=0, in_=bbframe)
-        self.template_btn.lift(bbframe)
-        self.write_btn.grid(column=2, row=0, in_=bbframe)
-        self.write_btn.lift(bbframe)
-        for child in bbframe.winfo_children():
-            child.grid_configure(padx=3, pady=3)
-        bbframe.grid(column=0,row=0, sticky=(N, W))
         
     def create_rdfs_frame(self, master:Notebook):
         rdfsframe = Frame(master, padding = '3 3 3 3', width=600, height=400)
@@ -265,6 +258,10 @@ class SEMWPConfig(Frame):
                                    command=self.open_template)
         self.write_btn = Button(master, text="Write\nPHP",
                                 command='', state=DISABLED)
+        self.savetemplate_btn = Button(master, text="Save\nTemplate",
+                                       command='', state=DISABLED)
+        btnlst = [self.rdfs_btn, self.template_btn, self.write_btn, self.savetemplate_btn]
+        ButtonBar(master, btnlst, 3).grid(column=0,row=0, sticky=(N, W))
         self.classtree = Treeview(master)
         self.rdfsFileName = StringVar()
         self.rdfsName = StringVar()
@@ -285,7 +282,6 @@ class SEMWPConfig(Frame):
         self.includeclass.set(1)
         self.includeclassflag = StringVar()
 #        self.includepropsflags=dict()
-        self.create_buttonbar(master)
         self.ntbk = Notebook(master, padding='6 12 6 12')
         self.create_rdfs_frame(self.ntbk)
         self.template_txt = TextPage(self.ntbk, 'Template', 

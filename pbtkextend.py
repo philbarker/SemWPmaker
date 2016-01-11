@@ -2,6 +2,22 @@ from tkinter import Frame, Checkbutton, Scrollbar, Canvas, IntVar, Text
 from tkinter import VERTICAL,LEFT, RIGHT, BOTH, TRUE, FALSE, Y, NW, NS, NSEW
 from tkinter.ttk import Notebook
 
+class ButtonBar(Frame):
+    u"""A frame containing a single row of buttons. NB, the buttons
+    are independent, pre-existing objects.
+    Input: master, parent widget;
+      btns, a list of buttons;
+      pad, padding around the buttons;
+      *args & **kw params for frame.
+    """
+    def __init__(self, master, btns, pad, *args, **kw):
+        super(ButtonBar, self).__init__(master, *args, **kw)
+        c = 0
+        for btn in btns:
+            btn.grid(in_=self, row=0, column=c, padx=pad, pady=pad)
+            btn.lift(self)
+            c += 1
+
 class TextPage(Text):
     u"""A page in a ttk Notebook which is a scrollable text widget
     Options: master: must be a ttkNotebook.
@@ -20,10 +36,9 @@ class TextPage(Text):
         self.configure(yscrollcommand=sb.set) 
         f.columnconfigure(0, weight=1)
         f.rowconfigure(0, weight=1)        
-        master.add(f, text=text) 
+        master.add(f, text=text)
 
 class CheckbuttonGroup(Frame):
-
     r"""CheckbuttonGroup: create a tk frame with a group of tk checkbuttons packed in it
     Options: master, a tk widget into which to put the checkbutton frame;
       names, a list of strings to use as the names of the checkbuttons;

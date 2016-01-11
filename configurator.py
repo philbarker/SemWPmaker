@@ -43,6 +43,7 @@ class SEMWPConfig(Frame):
         else:
             self.rdfsName.set('unnamed RDF Schema')
         self.build_classtree()
+        self.saverdfs_btn.config(command=self.save_rdfs, state=NORMAL)
         if self.templateFileName.get() is not '':
             self.write_btn.config(command=self.write, state=NORMAL)
 
@@ -54,9 +55,10 @@ class SEMWPConfig(Frame):
         if self.template_txt.get('1.0') == '':
             raise Exception('%r does not seem to be a valid template'
                              % self.templateFileName.get())
-        if self.rdfsName.get() is not '':
-            self.write_btn.config(command=self.write, state=NORMAL)
-        self.savetemplate_btn.config(command=self.save_template, state=NORMAL)
+        else:
+            self.savetemplate_btn.config(command=self.save_template, state=NORMAL)
+            if self.rdfsName.get() is not '':
+                self.write_btn.config(command=self.write, state=NORMAL)
 
 
     def write(self):
@@ -69,7 +71,15 @@ class SEMWPConfig(Frame):
                 return
             else:
                 outfile.write(self.template_txt.get('1.0', END) )
-        pass
+
+    def save_rdfs(self):
+        oldFileName = self.rdfsFileName.get()
+        self.rdfsFileName.set(asksaveasfilename(filetypes=[("ttl","*.ttl")]))
+        if self.rdfsFileName.get() is '':
+            self.rdfsFileName.set(oldFileName)
+            return
+        else:
+            self.rdfschema.g.serialize(self.rdfsFileName.get(), format='turtle')
         
     def set_property_flag(self, p:URIRef):
         include = []

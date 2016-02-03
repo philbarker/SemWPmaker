@@ -60,9 +60,8 @@ class SEMWPConfig(Frame):
             if self.rdfsName.get() is not '':
                 self.write_btn.config(command=self.write, state=NORMAL)
 
-
     def write(self):
-        self.rdfschema.write_metafile(c=self.rdfschema.thing)
+        self.rdfschema.write_all_metafiles(self.template_txt.get('1.0', END))
         
     def save_template(self):
         self.templateFileName.set(asksaveasfilename(filetypes=[("txt","*.txt")]))
@@ -111,13 +110,16 @@ class SEMWPConfig(Frame):
                 flags=self.rdfschema.get_pinclude_flags(p)
                 names=['text']
                 for c in self.rdfschema.g.objects(p, schema.rangeIncludes):
-                    heading = heading +' '+ self.rdfschema.resource_label(c, lang='en')
+                    try:
+                        rangelabel = self.rdfschema.resource_label(c, lang='en')
+                    except:
+                        rangelabel = "missing class?" #some sort of dialog should go here
+                    heading = heading +' '+ rangelabel
                     if c == schema.Text:
                         names.append('long text')
                         if flags == []:
                             self.rdfschema.set_pinclude_flags(p, incl=['text'])
                     else:
-                        rangelabel = self.rdfschema.resource_label(c, lang='en')
                         names.append(rangelabel)
                         if flags == []:
                             self.rdfschema.set_pinclude_flags(p, incl=[rangelabel])

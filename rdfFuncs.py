@@ -411,3 +411,20 @@ class SemWP(Graph):
             outf.write(self.template)
         return
 
+    def write_all_metafiles(self, template=''):
+    # Given SemWP object and a class write a php file for creating metadata for that
+    # type of thing. Uses a template to create custom post type and create meta
+    # boxes for editing custom metadata for posts of that type.
+    # if the template string is not supplied a default will be read from
+    # metatempl.txt
+        if template == '':
+            return Exception('No template')
+        else:
+            self.template = template
+        for tc in self.top_classes():
+            if (Literal('True') in self.g.objects(tc, semwp_ns.include)) :
+                self.write_metafile(tc, template)
+                for c in self.sub_classes(tc):
+                    if  (Literal('True') in self.g.objects(tc, semwp_ns.include)):
+                        self.write_metafile(c, template)
+        return
